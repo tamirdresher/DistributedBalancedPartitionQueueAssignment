@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: StatefulSet
+
+metadata:
+  name: {{ template "consumer.fullname" . }}
+  labels:
+    app: {{ template "consumer.name" . }}
+    chart: {{ template "consumer.chart" . }}
+    draft: {{ .Values.draft | default "draft-app" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  revisionHistoryLimit: 0
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "consumer.name" . }}
+      release: {{ .Release.Name }}
+  serviceName: {{ template "consumer.fullname" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "consumer.name" . }}
+        draft: {{ .Values.draft | default "draft-app" }}
+        release: {{ .Release.Name }}
+      annotations:
+        buildID: {{ .Values.buildID | default "" | quote }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.deployment.containerPort }}
+              protocol: TCP
+          {{- if .Values.probes.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /health/readiness
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health/liveness
+              port: http
+          {{- end }}
+          env:
+            {{- $root := . }}
+            {{- range $ref, $values := .Values.secrets }}
+            {{- range $key, $value := $values }}
+            - name: {{ $ref }}_{{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ template "consumer.fullname" $root }}-{{ $ref | lower }}
+                  key: {{ $key }}            
+            {{- end }}
+            {{- end }}
+            - name: STATEFULSET_NAME
+              value: {{ template "consumer.fullname" . }}
+            - name: STATEFULSET_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: PartitionCount
+              value: {{ .Values.global.partitionCount | quote  }}
+            - name: PartitionQueuePrefix
+              value: {{ .Values.global.partitionQueuePrefix }}
+            - name: RMQHost
+              value: {{ .Values.global.rmqHost }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

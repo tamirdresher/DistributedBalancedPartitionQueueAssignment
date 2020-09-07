@@ -1,0 +1,4 @@
+global:
+  rmqHost: rabbitmq
+  partitionCount: 3
+  partitionQueuePrefix: OrderEvents

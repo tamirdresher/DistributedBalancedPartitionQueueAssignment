@@ -1,0 +1,22 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+
+    <form method="post" asp-page="Index">
+        <div class="form-group">
+            <label asp-for="OrderEvent.OrderId"></label>
+            <input asp-for="OrderEvent.OrderId" class="form-control" placeholder="Enter Event" autocomplete="off" />
+        </div>
+        <div class="form-group">
+            <label asp-for="OrderEvent.Description"></label>
+            <input asp-for="OrderEvent.Description" class="form-control" placeholder="Enter Event" autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
