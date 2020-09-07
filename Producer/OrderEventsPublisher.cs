@@ -40,11 +40,12 @@ namespace Producer
 
         public void Publish(int orderId, string eventDescription)
         {
+            IModel rabbitChannel = _channelLazy.Value;
             var hashed = _hasher.ComputeHash(Encoding.UTF8.GetBytes(orderId.ToString()));
             var partition = BitConverter.ToUInt32(hashed, 0) % _configuration.PartitionCount;
 
             string queue = _configuration.PartitionQueuePrefix + partition;
-            _channelLazy.Value.QueueDeclare(queue: queue,            
+            rabbitChannel.QueueDeclare(queue: queue,            
                                  durable: true,
                                  exclusive: false,
                                  autoDelete: false,
@@ -54,7 +55,7 @@ namespace Producer
             string message = $"OrderId: {orderId}, Description: {eventDescription}";
             var body = Encoding.UTF8.GetBytes(message);
 
-            _channelLazy.Value.BasicPublish(exchange: "",
+            rabbitChannel.BasicPublish(exchange: "",
                                  routingKey: queue,
                                  basicProperties: null,
                                  body: body);
